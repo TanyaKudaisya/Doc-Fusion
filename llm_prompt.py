@@ -1,5 +1,5 @@
 import json
-
+import os
 
 class LLMPrompt:
     def __init__(self):
@@ -13,12 +13,12 @@ class LLMPrompt:
         user_query_llm_input = json.dumps(self.user_results, indent=4)
 
         prompt = f'''    
-            I am providing a JSON containing text excerpts that match a user's query with a similarity score of 0.85 or higher. Your task is to generate concise, well-structured, and contextually relevant headdings and summaries based on this content.
+            I am providing a JSON containing text excerpts that match a user's query with a similarity score of 0.85 or higher. Your task is to generate concise, well-structured, and contextually relevant headings and summaries based on this content.
 
             Instructions:
-            - Heading should be from "sub-headding" key value of the given json and remove any Initial number given before the headding text.
-            - Multiple "sub-headding" could have same heading so provide multiple heading and summries but they should not be same.
-            - The headding and summaries should be clear, concise, and directly relevant to the user’s query.
+            - Heading should be from "sub-heading" key value of the given json and remove any initial number given before the heading text.
+            - Multiple "sub-heading" could have same heading so provide multiple heading and summaries but they should not be same.
+            - The heading and summaries should be clear, concise, and directly relevant to the user’s query.
             - Retain the most important insights while eliminating redundancy.
             - Ensure the summary is logically structured and coherent.
             - If multiple texts provide different perspectives, synthesize them into a unified and meaningful response.
@@ -26,20 +26,20 @@ class LLMPrompt:
             Input:
                 {user_query_llm_input}
 
-            Note:  Do not include text like I understand or here is your summary and Do not mension heading at start.
+            Note: Do not include text like I understand or here is your summary and Do not mention heading at start.
             Output Format:
-            Provide a concise, headding and well-structured, contextually relevant summary based on the retrieved texts.
-            in fornt of heading put a 2nd Heading (##) like Markdown format and then nextline then summary normal text give it as usual, Multiple "sub-headding" could have same heading so provide multiple heading and summries but they should not be same.
+            Provide a concise, heading and well-structured, contextually relevant summary based on the retrieved texts.
+            In front of heading put a 2nd Heading (##) like Markdown format and then next line then summary normal text give it as usual, Multiple "sub-heading" could have same heading so provide multiple heading and summaries but they should not be same.
         '''
 
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/userbased.txt','w',encoding='utf-8') as data:
             data.write(str(prompt))
 
         return prompt
     
-
     def prompt_for_intro(self, search_result):
-        intros =  search_result.get("default_results", {}).get("Introduction", {})
+        intros = search_result.get("default_results", {}).get("Introduction", {})
         if not intros:  
             intros = search_result["user_based_search"].items()
 
@@ -58,18 +58,19 @@ class LLMPrompt:
             
             Input: {intro_formatted_data}
 
-            Note:  Do not include text like I understand or here is your summary and Do not mension heading at start.
+            Note: Do not include text like I understand or here is your summary and Do not mention heading at start.
 
             Output Format:
             Provide a well-structured and academically written introduction that encapsulates the key elements of the provided introductions.
         '''
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/introduction.txt','w',encoding='utf-8') as data:
             data.write(str(prompt))
 
         return prompt
     
     def prompt_for_abstract(self, search_result):
-        abstracts =  search_result.get("default_results", {}).get("Abstract", {})
+        abstracts = search_result.get("default_results", {}).get("Abstract", {})
 
         if not abstracts:  
             abstracts = search_result["user_based_search"].items()
@@ -91,20 +92,20 @@ class LLMPrompt:
             
             Input: {abstract_llm_input}
 
-            Note:  Do not include text like I understand or here is your summary and Do not mension heading at start.
+            Note: Do not include text like I understand or here is your summary and Do not mention heading at start.
 
             Output Format:
             Provide a single summarized abstract in clear, academic language.
         '''
         
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/abstract.txt','w',encoding='utf-8') as data:
             data.write(str(abstract_llm_input))
 
         return prompt
 
     def prompt_for_conclusion(self, search_result):
-        # breakpoint()
-        conclusions =  search_result.get("default_results", {}).get("Conclusion", {})
+        conclusions = search_result.get("default_results", {}).get("Conclusion", {})
 
         if not conclusions:  
             conclusions = search_result["user_based_search"].items()
@@ -126,20 +127,20 @@ class LLMPrompt:
         
         Input: {conclusion_llm_input}
 
-        Note:  Do not include text like I understand or here is your summary and Do not mension heading at start.
+        Note: Do not include text like I understand or here is your summary and Do not mention heading at start.
 
         Output Format:
         Provide a well-structured and academically written conclusion that encapsulates the key takeaways and potential future directions from the provided conclusions.        
-
         '''
         
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/conclusion.txt','w',encoding='utf-8') as data:
             data.write(str(conclusion_llm_input))
 
         return prompt
     
     def prompt_for_reference(self, search_result):
-        references =  search_result.get("default_results", {}).get("References", {})
+        references = search_result.get("default_results", {}).get("References", {})
 
         if not references:  
             references = search_result["user_based_search"].items()
@@ -150,32 +151,33 @@ class LLMPrompt:
         reference_llm_input = json.dumps(reference_formatted_data, indent=4)
 
         prompt = f'''
-        I am providing extracted text containing references from multiple academic papers. Your task is to provide extract, organize, deduplicate, and format these references into a properly structured academic reference section output, You can also remove some irrilated papers from it.
+        I am providing extracted text containing references from multiple academic papers. Your task is to extract, organize, deduplicate, and format these references into a properly structured academic reference section output. You can also remove some irrelevant papers from it.
 
         Example Output:
-        [1]   Zeiler, M. D. and Fergus, “Visualizing and understanding convolutional networks”. European Conference on Computer Vision, vol 8689. Springer, Cham, pp. 818-833, 2014. 
-        [2]   Yann LeCun, Yoshua Bengio, Geoffery  Hinton,  “Deep  Learning”, Nature, Volume 521, pp. 436-444, Macmillan Publishers, May 2015.
+        [1] Zeiler, M. D. and Fergus, "Visualizing and understanding convolutional networks". European Conference on Computer Vision, vol 8689. Springer, Cham, pp. 818-833, 2014. 
+        [2] Yann LeCun, Yoshua Bengio, Geoffery Hinton, "Deep Learning", Nature, Volume 521, pp. 436-444, Macmillan Publishers, May 2015.
 
         Input:
         {reference_llm_input}
 
-        Note:  Do not include text like I understand or here is your summary and Do not mension heading at start, Name of the Paper should be in double quotes "Visualizing and understanding convolutional networks".
+        Note: Do not include text like I understand or here is your summary and Do not mention heading at start, Name of the Paper should be in double quotes "Visualizing and understanding convolutional networks".
 
         Output:
         Provide a output which is well-structured, serialized with [N] where N is a number, deduplicated, and properly formatted reference list in a consistent academic citation style. Do not include any additional text or explanations—only the final formatted references.
         '''
         
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/reference.txt','w',encoding='utf-8') as data:
             data.write(str(reference_llm_input))
 
         return prompt
     
     def prompt_for_methodology(self, search_result):
-        methodologys =  search_result.get("default_results", {}).get("Methodology", {})
-        if not methodologys:  
-            methodologys = search_result["user_based_search"].items()
+        methodologies = search_result.get("default_results", {}).get("Methodology", {})
+        if not methodologies:  
+            methodologies = search_result["user_based_search"].items()
 
-        methodology_formatted_data = {"Methodology": methodologys}
+        methodology_formatted_data = {"Methodology": methodologies}
 
         try:
             methodology_llm_input = json.dumps(methodology_formatted_data, indent=4)
@@ -185,7 +187,6 @@ class LLMPrompt:
             return None
 
         prompt = f'''
-
         I am providing a JSON containing methodologies from multiple academic papers, along with their similarity scores. Your task is to generate a concise, well-structured, and academically written summarized methodology that accurately captures the research approach, experimental setup, and techniques used in the given papers.
 
         Instructions:
@@ -195,15 +196,15 @@ class LLMPrompt:
         - Ensure the summary is coherent, logically structured, and technically precise.
         - If multiple methodologies are provided, highlight common approaches and differences, if relevant.
         
-        Input:{methodology_llm_input}
+        Input: {methodology_llm_input}
 
-        Note:  Do not include text like I understand or here is your summary and Do not mension heading at start.
+        Note: Do not include text like I understand or here is your summary and Do not mention heading at start.
         
         Output Format:
         Provide a well-structured and academically written methodology summary that effectively synthesizes the approaches used in the given papers.
-
         '''
         
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/methodology.txt','w',encoding='utf-8') as data:
             data.write(str(methodology_llm_input))
 
@@ -232,22 +233,20 @@ class LLMPrompt:
 
         Input: {result_llm_input}
 
-        Note:  Do not include text like I understand or here is your summary and Do not mension heading at start.
-
+        Note: Do not include text like I understand or here is your summary and Do not mention heading at start.
 
         Output Format:
         Provide a well-structured and academically written results summary that effectively synthesizes the key outcomes from the given papers.
         '''
         
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/results.txt','w',encoding='utf-8') as data:
             data.write(str(result_llm_input))
 
         return prompt
     
     def prompt_for_lit_review(self, references):
-
-        prompt=f'''
-
+        prompt = f'''
         You are an AI model designed to generate a well-structured Literature Review section in IEEE format based on given references. Your task is to synthesize the key findings, methodologies, and contributions of the provided papers while maintaining an academic writing style.
 
         Instructions:
@@ -267,13 +266,14 @@ class LLMPrompt:
 
         By leveraging CNNs, both studies demonstrate the adaptability of deep learning in computer vision applications, reinforcing the need for optimized architectures tailored to specific recognition tasks.
 
-        Note:  Do not include text like I understand or here is your summary and Do not mension heading at start.
-               Do not mention multiple i.e. more then one reference together eg [3, 4] or [1, 5 , 9] is not allowed.
+        Note: Do not include text like I understand or here is your summary and Do not mention heading at start.
+               Do not mention multiple i.e. more than one reference together eg [3, 4] or [1, 5, 9] is not allowed.
 
         INPUT:
         {references}
         '''
         
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/lit_review.txt','w',encoding='utf-8') as data:
             data.write(str(prompt))
 
@@ -300,7 +300,56 @@ class LLMPrompt:
             **Example Output:** 
             "Figure X: Visualization of [main concept], demonstrating [key insight] as observed in [data or context]."
         '''
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
         with open('./extracted/caption_image_prompt.txt', 'w', encoding='utf-8') as data:
             data.write(str(prompt))
 
+        return prompt
+
+    def prompt_for_2_mark_questions(self, content, topic):
+        content_json = json.dumps(content, indent=4)
+        prompt = f'''
+            You are an expert in academic question paper design for {topic}. Using the provided content from syllabus or study materials, generate exactly 7 short-answer questions, each worth 2 marks. These questions should test basic understanding, definitions, or simple concepts.
+
+            Instructions:
+            - Each question should be concise and directly related to the provided content.
+            - Questions should cover different subtopics within the content to ensure variety.
+            - Format each question as a numbered item (e.g., 1. What is...).
+            - Avoid complex or analytical questions (reserve those for 7-mark questions).
+            
+            Input: {content_json}
+
+            Output Format:
+            1. [Question text]
+            2. [Question text]
+            ...
+            7. [Question text]
+        '''
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
+        with open('./extracted/2_mark_questions.txt', 'w', encoding='utf-8') as data:
+            data.write(prompt)
+        return prompt
+
+    def prompt_for_7_mark_questions(self, content, topic):
+        content_json = json.dumps(content, indent=4)
+        prompt = f'''
+            You are an expert in academic question paper design for {topic}. Using the provided content from syllabus or study materials, generate exactly 8 analytical or descriptive questions, each worth 7 marks. These questions should test in-depth understanding, problem-solving, or application of concepts.
+
+            Instructions:
+            - Each question should be detailed, requiring explanation, analysis, or problem-solving.
+            - Questions should cover key concepts and subtopics within the content.
+            - Format each question as a numbered item (e.g., 1. Explain...).
+            - Ensure questions are varied in scope and complexity.
+            
+            Input: {content_json}
+
+            Output Format:
+            1. [Question text]
+            2. [Question text]
+            ...
+            8. [Question text]
+        '''
+        os.makedirs('./extracted', exist_ok=True)  # Create directory if it doesn't exist
+        with open('./extracted/7_mark_questions.txt', 'w', encoding='utf-8') as data:
+            data.write(prompt)
         return prompt

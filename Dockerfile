@@ -2,10 +2,10 @@ FROM python:3.10-slim
     
 WORKDIR /app
 
-COPY requirements.txt .
-    
+COPY requirements.txt . 
+#curr dirc .
 RUN pip install --upgrade pip
-   
+
 RUN pip install --no-cache-dir -r requirements.txt --no-deps
 
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
@@ -19,5 +19,5 @@ ENV TOKENIZERS_PARALLELISM=false
 COPY . .
 
 EXPOSE 8501
-
+#port no
 CMD ["streamlit", "run", "app.py"]

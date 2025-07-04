@@ -5,15 +5,12 @@ import sys
 import re
 
 from llm_prompt import LLMPrompt
-from parser import LlamaPDFParser
+from parser import LlamaPDFParser #converts the docs into markdown format 
 from retrieval import MilvusEmbeddingManager
 from ToLatex import md_to_latex
 from usegemini import ModelGemini
 
-
-
 nest_asyncio.apply()
-
 
 class PDFToMilvusAutomation:
     def __init__(self, pdf_paths=None, output_dir=None):
@@ -76,7 +73,6 @@ class PDFToMilvusAutomation:
             'default_results': default_results,
             'content_results': content_results
         }
-    
 
     async def generate_responses(self, search_result):
         """
@@ -121,13 +117,12 @@ class PDFToMilvusAutomation:
         if caption_prompt:
             caption = await response_gemini.gemini_response(get_prompt.prompt_for_caption(caption_prompt))
 
-
         # Write to Markdown file
         with open('./paper.md', 'w', encoding='utf-8') as data:
             data.write("# Review Paper\n\n")
             data.write(f"## Abstract\n{response_data['abstract']}\n\n")
             data.write(f"## Introduction\n{response_data['intro']}\n\n")
-            data.write(f"## Litrature Review\n{lit_review}\n\n")
+            data.write(f"## Literature Review\n{lit_review}\n\n")
             data.write(f"## Methodology\n{response_data['methodology']}\n\n")
             data.write(f"{response_data['user_based']}\n\n")
             data.write(f"## Results\n{response_data['result']}\n\n")
@@ -137,6 +132,46 @@ class PDFToMilvusAutomation:
                     data.write(f"**Figure Caption:** {caption}\n\n")
             data.write(f"## Conclusion\n{response_data['conclusion']}\n\n")
             data.write(f"## References\n{response_data['reference']}\n\n")
+
+    async def generate_question_paper(self, topic, output_dir):
+        """
+        Generate a question paper based on stored syllabus/study material content.
+        """
+        get_prompt = LLMPrompt()
+        response_gemini = ModelGemini()
+
+        # Perform vector search to retrieve relevant content
+        search_result = self.perform_vector_search(query=topic, anns_field="content_embedding", limit=10, threshold=0.75)
+        
+        # Generate 2-mark and 7-mark questions
+        prompts = {
+            "2_mark": get_prompt.prompt_for_2_mark_questions(search_result, topic),
+            "7_mark": get_prompt.prompt_for_7_mark_questions(search_result, topic)
+        }
+        
+        # Run LLM calls asynchronously
+        responses = await asyncio.gather(*[
+            response_gemini.gemini_response(prompt) for prompt in prompts.values()
+        ])
+        
+        # Map responses
+        response_data = dict(zip(prompts.keys(), responses))
+        
+        # Write to Markdown file
+        md_path = os.path.join(output_dir, 'question_paper.md')
+        with open(md_path, 'w', encoding='utf-8') as data:
+            data.write(f"# Question Paper: {topic}\n\n")
+            data.write("## Section A (2 Marks Each)\n")
+            data.write(f"{response_data['2_mark']}\n\n")
+            data.write("## Section B (7 Marks Each)\n")
+            data.write(f"{response_data['7_mark']}\n\n")
+        
+        # Convert to LaTeX and PDF
+        latex_path = os.path.join(output_dir, 'question_paper.tex')
+        pdf_path = os.path.join(output_dir, 'question_paper.pdf')
+        md_to_latex(md_path, latex_path, pdf_path)
+        
+        return md_path, pdf_path
 
 async def main():
     # Get mode, list of PDF files, and optional output directory or query
